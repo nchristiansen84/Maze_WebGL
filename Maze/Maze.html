@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute  vec4 vPosition;
+attribute  vec2 vTexCoord;
+
+varying vec4 fColor;
+varying vec2 fTexCoord;
+
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+
+attribute  vec3 vNormal;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform vec4 lightPosition;
+uniform float shininess;
+
+void main() 
+{
+    vec3 pos = -(modelViewMatrix * vPosition).xyz;
+    
+    //fixed light position
+    vec3 light = lightPosition.xyz;
+    vec3 L = normalize( light - pos );
+    vec3 E = normalize( -pos );
+    vec3 H = normalize( L + E );
+    vec4 NN = vec4(vNormal,0);
+
+    // Transform vertex normal into eye coordinates
+    vec3 N = normalize( (modelViewMatrix*NN).xyz);
+
+    // Compute terms in the illumination equation
+    vec4 ambient = ambientProduct;
+
+    float Kd = max( dot(L, N), 0.0 );
+    vec4  diffuse = Kd*diffuseProduct;
+
+    float Ks = pow( max(dot(N, H), 0.0), shininess );
+    vec4  specular = Ks * specularProduct;
+    
+    if( dot(L, N) < 0.0 ) {
+	specular = vec4(0.0, 0.0, 0.0, 1.0);
+    } 
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+    fColor = ambient + diffuse +specular;    
+    fColor.a = 1.0;
+	
+    fTexCoord = vTexCoord;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec4 fColor;
+varying vec2 fTexCoord;
+
+uniform sampler2D texture;
+
+void
+main()
+{
+    gl_FragColor = fColor * texture2D( texture, fTexCoord );
+}
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="wallModel.js"></script>
+<script type="text/javascript" src="Maze.js"></script>
+
+<body>
+<p style="text-indent: 11em;"> 
+Current Direction:
+<span id="direction">North</span>
+</p>
+
+<canvas id="gl-canvas" width="512" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+
+<br/>
+
+Navigate the maze with W, A, S, D to move North, West, South, East respectively.
+<br/>
+Use Q and E to change the view by 45 degrees Right and Left respectively.
+
+<br/>
+<br/>
+
+You enter the maze from the southwest corner and the goal is to reach the <br/>
+exit of the maze which is in the northeast corner. You can view your current <br/>
+direction above the canvas which will change to "YOU WIN" when you reach the exit.<br/>
+
+<br/>
+
+Use the Restart Maze button to go back to the beginning of the current maze.
+<br/>
+<button id = "RestartMaze">Restart Maze</button>
+
+<br/>
+<br/>
+If you refresh the page a new maze will be randomly generated.
+
+</body>
+</html>
